@@ -10,12 +10,12 @@
         <link href="{{asset('css/reset.css')}}" ref="stylesheet">
 
         <script type="module" src="{{asset('js/app.js')}}" defer></script>
+
         @vite('resources/css/app.css')
         @vite('resources/css/reset.css')
-        @vite('resources/img/logo.css')
     </head>
     <body>
-        <div id="app" style="width: 100%"></div>
+        <div id="app"></div>
         @vite('resources/js/app.js')
     </body>
 </html>
