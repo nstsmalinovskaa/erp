@@ -54,14 +54,25 @@
                         </tbody>
                     </table>
                 </div>
-                <button class="button-add" type="submit">Добавить</button>
+                <button class="button-add" type="submit" @click="isModalOpen = true">Добавить</button>
+                <CreateProduct v-if="isModalOpen" @close="isModalOpen = false"/>
             </div>
         </main>
 </template>
 
 <script>
+import CreateProduct from "./CreateProduct.vue";
+
+
 export default {
-    name: "App.vue"
+    name: "App.vue",
+    components: {CreateProduct},
+
+    data () {
+        return {
+            isModalOpen: false
+        }
+    }
 }
 </script>
 
