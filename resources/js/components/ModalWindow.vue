@@ -1,6 +1,6 @@
 <template>
-    <div class="modal"  @click.self="close" >
-        <div class="form-container">
+    <div class="modal" @click.self="close">
+        <div class="modal-content">
             <Close-button @click="close"/>
             <div>
                <slot/>
@@ -29,7 +29,7 @@ export default {
 <style scoped>
 
 .modal {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -41,10 +41,10 @@ export default {
     background-color: rgba(0, 0, 0, 0.6);
 }
 
-.form-container {
+.modal-content {
     width: auto;
     margin: auto;
-    padding: 20px;
+    padding: 16px;
     background-color: #374050;
     border-radius: 8px;
     position: relative;

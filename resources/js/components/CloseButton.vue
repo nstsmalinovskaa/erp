@@ -1,5 +1,5 @@
 <template>
-    <div class="form-header">
+    <div class="modal-header">
         <img class="close-icon" src="../../img/close.svg" alt="Enterprise Resource Planning logo">
     </div>
 </template>
@@ -12,7 +12,7 @@ export default {
 
 <style scoped>
 
-.form-header {
+.modal-header {
     margin-bottom: 30px;
 }
 

@@ -13,4 +13,8 @@ class Product extends Model
 
     protected $table = 'products';
     protected $guarded = false;
+    protected $fillable = ['name', 'article', 'status', 'data'];
+    protected $casts = [
+        'data' => 'array'
+    ];
 }

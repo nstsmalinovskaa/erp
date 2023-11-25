@@ -1,34 +1,28 @@
 <template>
     <ModalWindow>
         <div class="form-create">
-            <h5>Добавление продукта</h5>
-
+            <h5>Редактирование продукта</h5>
             <label for="article">Артикул</label>
-            <input v-model="article" type="text" id="article" name="article" pattern="[a-zA-Z0-9]+" required>
-            <div class="error-message" v-if="article && !isArticleValid">Артикул должен содержать только латинские символы и цифры</div>
-            <span v-if="showError('article')" class="error-message">Пожалуйста, заполните артикул</span>
-
+            <input v-model="editedProduct.article" type="text" id="article" name="article" required>
             <label for="name">Название</label>
-            <input v-model="name" type="text" id="name" name="name"   :minlength="minLength" >
-            <div class="error-message" v-if="name && name.length < minLength">Название должно быть не менее {{minLength}} символов</div>
-            <span v-if="showError('name')" class="error-message">Пожалуйста, заполните название</span>
-
+            <input v-model="editedProduct.name" type="text" id="name" name="name" required>
             <label for="status">Статус</label>
             <div class="select">
                 <div class="v-select">
                     <div class="v-select-header">
-                        <p class="title">{{status.name}}</p>
-                            <img @click="isStatusOptionsVisible = !isStatusOptionsVisible" src="../../img/expand_down.svg">
+                        <p class="title">{{ status.name }}</p>
+                        <img @click="isStatusOptionsVisible = !isStatusOptionsVisible"
+                             src="../../../img/expand_down.svg">
                     </div>
-                    <div v-if="isStatusOptionsVisible"  class="options">
-                        <p v-for="option in statuses" @click = selectStatus(option)>{{option.name}}</p>
+                    <div v-if="isStatusOptionsVisible" class="options">
+                        <p v-for="option in statuses" @click=selectStatus(option)>{{ option.name }}</p>
                     </div>
                 </div>
             </div>
 
             <div class="attributes">
                 <h5>Атрибуты</h5>
-                <div class="attr-group"  v-for="(attribute, index) in attributes" :key="index">
+                <div class="attr-group" v-for="(attribute, index) in attributes" :key="index">
                     <div class="name-atr">
                         <label for="name">Название</label>
                         <label for="name">Значение</label>
@@ -36,69 +30,68 @@
                     <div class="attribute-group">
                         <input v-model="attribute.name" type="text" required>
                         <input v-model="attribute.value" type="text" required>
-                        <img @click="removeAttribute(index)" class="delete-attribute" src="../../img/attribute.svg">
+                        <img @click="removeAttribute(index)" class="delete-attribute" src="../../../img/attribute.svg">
                     </div>
                 </div>
-                <a  @click="addAttribute" class="add-attr"> + Добавить атрибут</a>
+                <a @click="addAttribute" class="add-attr"> + Добавить атрибут</a>
             </div>
 
-            <button @click="addProduct" class="button-form" type="submit">Добавить</button>
+            <button @click="updateProduct" class="button-form" type="submit">Добавить</button>
         </div>
     </ModalWindow>
+
 </template>
 
 <script>
-import ModalWindow from "./ModalWindow.vue";
+import ModalWindow from "../ModalWindow.vue";
 
 export default {
-    name: "CreateProduct.vue",
+    name: "UpdateProduct.vue",
     components: {ModalWindow},
+
+    props: {
+        product: Object,
+        getStatusLabel: Function,
+        getProducts: Function
+    },
 
     data() {
         return {
-            article: null,
-            name: null,
             statuses: [
                 {name: "Доступен", value: 'available'},
                 {name: "Не доступен", value: 'unavailable'},
             ],
             isStatusOptionsVisible: false,
-            status: null,
+            status: this.getStatusLabel(this.product.status),
             attributes: [],
-            minLength: 10,
-            isArticleValid: true,
-            submitClicked: false,
+            editedProduct: { article: "", name: "", status: "", data: ""}
         }
     },
 
     created() {
-        this.status = this.statuses[0];
+        this.convertAttributestoArr()
+        this.createEditProduct()
     },
 
-    props: {
-        getProducts: Function
-    },
 
     methods: {
-        addProduct() {
-            if (this.validateForm()) {
-                axios.post('/api/products', {
-                    article: this.article,
-                    name: this.name,
-                    status: this.status.value,
-                    data: this.submitAttributes(),
+        updateProduct() {
+            axios.patch(`/api/products/${this.editedProduct.id}`, {
+                article: this.editedProduct.article,
+                name: this.editedProduct.name,
+                status: this.editedProduct.value,
+                data: this.submitAttributes(),
+            })
+                .then(res => {
+                    this.getProducts();
+                    this.$emit('close')
                 })
-                    .then(res => {
-                        this.status = this.statuses[0]
-                        this.getProducts();
-                        this.$emit('close')
-                    })
-            }
         },
         selectStatus(option) {
-           this.status = option;
-           this.isStatusOptionsVisible = false
+            this.status = option;
+            this.isStatusOptionsVisible = false
         },
+
         addAttribute() {
             this.attributes.push({ name: "", value: "" });
         },
@@ -112,16 +105,19 @@ export default {
             });
             return dataToSend
         },
-        validateForm() {
-            this.submitClicked = true;
-            this.isArticleValid = /[a-zA-Z0-9]+/.test(this.article);
-            return this.name.length >= this.minLength && this.isArticleValid;
-        },
-        showError(fieldName) {
-            return this.submitClicked && !this[fieldName];
-        },
-    }
+        convertAttributestoArr() {
+            for (const [attribute, value] of Object.entries(this.editedProduct.data) ) {
 
+                this.attributes.push({name: attribute, value: value })
+            }
+        },
+        createEditProduct() {
+            for (let key in this.product) {
+                this.editedProduct[key] = this.product[key];
+            }
+        }
+
+    }
 }
 </script>
 
@@ -201,7 +197,7 @@ input {
     border-radius: 5px;
 }
 
-.options p{
+.options p {
     padding: 10px;
 
     width: 450px;
@@ -213,7 +209,7 @@ input {
     font-weight: 400;
 }
 
-.options p:hover{
+.options p:hover {
     background-color: #50A9FC;
 }
 
@@ -279,14 +275,6 @@ input {
 
 .button-form:hover {
     background: #0EAADC;
-}
-
-.error-message {
-    margin-bottom: 20px;
-    margin-left: 5px;
-
-    opacity: 0.5;
-    font-size: 10px;
 }
 
 </style>
