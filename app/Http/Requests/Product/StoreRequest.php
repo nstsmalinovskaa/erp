@@ -23,9 +23,9 @@ class StoreRequest extends FormRequest
     {
         return [
             'name' => 'required|string|min:10',
-            'article' => 'sometimes',
-            'status' => 'sometimes',
-            'data' => 'sometimes'
+            'article' => 'required|string|regex:/^[a-zA-Z0-9]+$/|unique:products',
+            'status' => 'required|in:available,unavailable',
+            'data' => 'nullable|array'
         ];
     }
 }

@@ -1,4 +1,5 @@
 <template>
+
     <div class="modal" @click.self="close">
         <div class="modal-content">
             <Close-button @click="close"/>
@@ -7,6 +8,7 @@
             </div>
         </div>
     </div>
+
 </template>
 
 <script>

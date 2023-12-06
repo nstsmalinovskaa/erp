@@ -1,19 +1,21 @@
 <template>
+
     <div class="content">
+
         <div class="table-container">
             <table class="table">
                 <thead>
-                <tr>
-                    <th>АРТИКУЛ</th>
-                    <th>НАЗВАНИЕ</th>
-                    <th>СТАТУС</th>
-                    <th>АТРИБУТЫ</th>
-                </tr>
+                    <tr>
+                        <th>АРТИКУЛ</th>
+                        <th>НАЗВАНИЕ</th>
+                        <th>СТАТУС</th>
+                        <th>АТРИБУТЫ</th>
+                    </tr>
                 </thead>
                 <tbody>
                 <tr v-for="product in products" @click="openProduct(product)">
-                    <td>{{ product.name }}</td>
                     <td>{{ product.article }}</td>
+                    <td>{{ product.name }}</td>
                     <td>{{ getStatusLabel(product.status).name }}</td>
                     <td>
                         <template v-for="(value, attribute) in product.data">
@@ -33,28 +35,63 @@
                 </tr>
                 </tbody>
             </table>
+            <button class="button-add" type="submit" @click="isModalOpen = true">Добавить</button>
         </div>
-        <button class="button-add" type="submit" @click="isModalOpen = true">Добавить</button>
+
+        <div class="pagination" v-if="pagination.last_page > 1">
+            <ul>
+                <li v-if="pagination.current_page !== 1">
+                    <img @click="getProducts(pagination.current_page - 1)"
+                         src="../../../img/left.svg">
+                </li>
+                <li v-for="link in pagination.links">
+                    <template v-if="Number(link.label) &&
+                            (pagination.current_page - link.label < 2 &&
+                            pagination.current_page - link.label > -2) ||
+                            Number(link.label) === 1 ||  Number(link.label) === pagination.last_page">
+                        <a @click.prevent="getProducts(link.label)" :class="{ 'active': link.active }"
+                           href="#0">{{ link.label }}</a>
+                    </template>
+                    <template v-if="Number(link.label) &&
+                            pagination.current_page !== 3 &&
+                            (pagination.current_page - link.label === 2) ||
+                            Number(link.label) &&
+                            pagination.current_page !== pagination.last_page - 2 &&
+                            (pagination.current_page - link.label === -2)">
+                        <a>...</a>
+                    </template>
+                </li>
+                <li v-if="pagination.current_page !== pagination.last_page">
+                    <img @click="getProducts(pagination.current_page + 1)"
+                         src="../../../img/right.svg">
+                </li>
+            </ul>
+        </div>
+
         <teleport to="body">
             <UpdateProduct
                 v-if="isUpdateProductVisible"
                 :product="updatedProduct"
                 :getStatusLabel="getStatusLabel"
                 :getProducts="getProducts"
+                :role="role"
                 @close="closeUpdateProduct"
             />
         </teleport>
         <teleport to="body">
-            <CreateProduct :getProducts="getProducts" v-if="isModalOpen" @close="isModalOpen = false"/>
+            <CreateProduct
+                :getProducts="getProducts"
+                v-if="isModalOpen"
+                @close="isModalOpen = false"/>
         </teleport>
     </div>
+
 </template>
 
 <script>
-import CreateProduct from "../CreateProduct.vue";
+import CreateProduct from "./CreateProduct.vue";
 import ShowProduct from "./ShowProduct.vue";
 import UpdateProduct from "./UpdateProduct.vue";
-import data from "bootstrap/js/src/dom/data.js";
 
 export default {
     name: "IndexProduct.vue",
@@ -66,7 +103,12 @@ export default {
             isUpdateProductVisible: false,
             updatedProduct: null,
             products: [],
+            pagination: []
         }
+    },
+
+    props: {
+        role: String
     },
 
     mounted() {
@@ -74,12 +116,14 @@ export default {
     },
 
     methods: {
-        getProducts() {
-            axios.get('/api/products')
+        getProducts(page = 1) {
+            axios.get(`/api/products?page=${page}`)
                 .then(res => {
                     this.products = res.data.data
+                    this.pagination = res.data.meta
                 })
         },
+
         openProduct(product) {
             this.products.forEach((p) => (p.openProduct = false));
             product.openProduct = true;
@@ -108,8 +152,6 @@ export default {
             this.isUpdateProductVisible = false;
         },
     },
-
-
 }
 </script>
 
@@ -118,17 +160,20 @@ export default {
 .content {
     width: auto;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: flex-start;
 }
 
-/* Table */
 .table-container {
-    width: 800px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-direction: row;
 }
 
 .table {
-    width: 100%;
+    width: 800px;
     border: none;
     margin-bottom: 20px;
     border-collapse: collapse;
@@ -166,7 +211,6 @@ export default {
     color: #374050;
 }
 
-/* Button Add*/
 .button-add {
     width: 136px;
     height: 30px;
@@ -189,4 +233,38 @@ export default {
 .button-add:hover {
     background: #0EAADC;
 }
+
+.pagination {
+    width: 800px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pagination img {
+    cursor: pointer;
+}
+
+.pagination ul {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.pagination li {
+    margin-right: 12px;
+
+    font-size: 16px;
+    color: #C4C4C4;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+.pagination a.active {
+    font-weight: bold;
+    color: #6c757d;
+    opacity: 0.7;
+}
+
 </style>

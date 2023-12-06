@@ -1,46 +1,62 @@
 <template>
+
     <ModalWindow>
+
         <div class="product-card-header">
-            <h5>{{product.name}}</h5>
+            <h5>{{ product.name }}</h5>
             <div class="icons">
-                <img @click="edit()" class="img-icon" src="../../../img/edit_icon.svg" alt="Edit icon">
-                <img @click="deleteProduct(product.id)" class="img-icon" src="../../../img/delete_icon.svg" alt="Delete icon">
+                <img
+                    @click="edit()"
+                    class="img-icon"
+                    src="../../../img/edit_icon.svg"
+                    alt="Edit icon">
+                <img
+                    @click="deleteProduct(product.id)"
+                    class="img-icon"
+                    src="../../../img/delete_icon.svg"
+                    alt="Delete icon">
             </div>
         </div>
+
         <div class="product-card">
+
             <div class="info">
                 <div class="name">
-                <span >Артикул</span>
+                    <span>Артикул</span>
                 </div>
-                <span>{{product.article}}</span>
+                <span>{{ product.article }}</span>
             </div>
+
             <div class="info">
                 <div class="name">
-                <span >Название</span>
+                    <span>Название</span>
                 </div>
-                <span>{{product.name}}</span>
+                <span>{{ product.name }}</span>
             </div>
+
             <div class="info">
                 <div class="name">
-                <span>Статус</span>
+                    <span>Статус</span>
                 </div>
-                <span>{{getStatusLabel(product.status).name}}</span>
+                <span>{{ getStatusLabel(product.status).name }}</span>
             </div>
+
             <div class="info">
                 <div class="name">
-                <span>Атрибуты</span>
+                    <span>Атрибуты</span>
                 </div>
                 <span>
-                    <template v-for="(value, attribute) in product.data">{{ attribute }}: {{value}} <br> </template>
+                    <template v-for="(value, attribute) in product.data">{{ attribute }}: {{ value }} <br> </template>
                 </span>
             </div>
+
         </div>
     </ModalWindow>
+
 </template>
 
 <script>
-import ModalWindow from "../ModalWindow.vue";
-
+import ModalWindow from "./Main/Modal/ModalWindow.vue";
 
 export default {
     name: "ShowProduct.vue",
@@ -62,6 +78,7 @@ export default {
                     this.$emit('close')
                 })
         },
+
         edit() {
             this.$emit('edit', {product: this.product})
         }
@@ -108,7 +125,7 @@ h5 {
     word-wrap: break-word;
 }
 
-.name span{
+.name span {
     opacity: 0.7;
 }
 

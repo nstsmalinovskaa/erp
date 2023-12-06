@@ -1,34 +1,35 @@
 <template>
     <ModalWindow>
-        <div class="form-create">
+        <Form class="form-create" @submit="addProduct">
             <h5>Добавление продукта</h5>
 
             <label for="article">Артикул</label>
-            <input v-model="article" type="text" id="article" name="article" pattern="[a-zA-Z0-9]+" required>
-            <div class="error-message" v-if="article && !isArticleValid">Артикул должен содержать только латинские символы и цифры</div>
-            <span v-if="showError('article')" class="error-message">Пожалуйста, заполните артикул</span>
+            <Field class="field-input" v-model="article" type="text" id="article" name="article" :rules="articleRules"
+                   @input="resetUniqueArticle"/>
+            <ErrorMessage class="error" name="article"/>
+            <span v-if="uniqueArticle" class="error">Артикул должен быть уникалным</span>
 
             <label for="name">Название</label>
-            <input v-model="name" type="text" id="name" name="name"   :minlength="minLength" >
-            <div class="error-message" v-if="name && name.length < minLength">Название должно быть не менее {{minLength}} символов</div>
-            <span v-if="showError('name')" class="error-message">Пожалуйста, заполните название</span>
+            <Field class="field-input" v-model="name" type="text" id="name" name="name" :rules="nameRules"/>
+            <ErrorMessage class="error" name="name"/>
 
             <label for="status">Статус</label>
             <div class="select">
                 <div class="v-select">
                     <div class="v-select-header">
-                        <p class="title">{{status.name}}</p>
-                            <img @click="isStatusOptionsVisible = !isStatusOptionsVisible" src="../../img/expand_down.svg">
+                        <p class="title">{{ status.name }}</p>
+                        <img @click="isStatusOptionsVisible = !isStatusOptionsVisible"
+                             src="../../../img/expand_down.svg">
                     </div>
-                    <div v-if="isStatusOptionsVisible"  class="options">
-                        <p v-for="option in statuses" @click = selectStatus(option)>{{option.name}}</p>
+                    <div v-if="isStatusOptionsVisible" class="options">
+                        <p v-for="option in statuses" @click=selectStatus(option)>{{ option.name }}</p>
                     </div>
                 </div>
             </div>
 
             <div class="attributes">
                 <h5>Атрибуты</h5>
-                <div class="attr-group"  v-for="(attribute, index) in attributes" :key="index">
+                <div class="attr-group" v-for="(attribute, index) in attributes" :key="index">
                     <div class="name-atr">
                         <label for="name">Название</label>
                         <label for="name">Значение</label>
@@ -36,23 +37,24 @@
                     <div class="attribute-group">
                         <input v-model="attribute.name" type="text" required>
                         <input v-model="attribute.value" type="text" required>
-                        <img @click="removeAttribute(index)" class="delete-attribute" src="../../img/attribute.svg">
+                        <img @click="removeAttribute(index)" class="delete-attribute" src="../../../img/attribute.svg">
                     </div>
                 </div>
-                <a  @click="addAttribute" class="add-attr"> + Добавить атрибут</a>
+                <a @click="addAttribute" class="add-attr"> + Добавить атрибут</a>
             </div>
 
-            <button @click="addProduct" class="button-form" type="submit">Добавить</button>
-        </div>
+            <button class="button-form" type="submit">Добавить</button>
+        </Form>
     </ModalWindow>
 </template>
 
 <script>
-import ModalWindow from "./ModalWindow.vue";
+import ModalWindow from "./Main/Modal/ModalWindow.vue";
+import {Field, Form, ErrorMessage} from 'vee-validate';
 
 export default {
     name: "CreateProduct.vue",
-    components: {ModalWindow},
+    components: {ModalWindow, Form, Field, ErrorMessage},
 
     data() {
         return {
@@ -65,9 +67,7 @@ export default {
             isStatusOptionsVisible: false,
             status: null,
             attributes: [],
-            minLength: 10,
-            isArticleValid: true,
-            submitClicked: false,
+            uniqueArticle: false
         }
     },
 
@@ -80,31 +80,63 @@ export default {
     },
 
     methods: {
+
         addProduct() {
-            if (this.validateForm()) {
-                axios.post('/api/products', {
-                    article: this.article,
-                    name: this.name,
-                    status: this.status.value,
-                    data: this.submitAttributes(),
+            axios.post('/api/products', {
+                article: this.article,
+                name: this.name,
+                status: this.status.value,
+                data: this.submitAttributes(),
+            })
+                .then(res => {
+                    this.status = this.statuses[0]
+                    this.getProducts();
+                    this.$emit('close')
                 })
-                    .then(res => {
-                        this.status = this.statuses[0]
-                        this.getProducts();
-                        this.$emit('close')
-                    })
+                .catch(errors => {
+                    if (errors.response.data.message === "The article has already been taken.") {
+                        this.uniqueArticle = true
+                    }
+                })
+        },
+
+        articleRules(value) {
+            if (!value) {
+                return 'Обязательное поле'
             }
+            if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                return 'Поле должно содержать только латинские символы и цифры'
+            }
+            return true
         },
+
+        resetUniqueArticle() {
+            this.uniqueArticle = false;
+        },
+
+        nameRules(value) {
+            if (!value) {
+                return 'Обязательное поле'
+            }
+            if (value.length < 10) {
+                return 'Минимальное значение 10 символов'
+            }
+            return true
+        },
+
         selectStatus(option) {
-           this.status = option;
-           this.isStatusOptionsVisible = false
+            this.status = option;
+            this.isStatusOptionsVisible = false
         },
+
         addAttribute() {
-            this.attributes.push({ name: "", value: "" });
+            this.attributes.push({name: "", value: ""});
         },
+
         removeAttribute(index) {
             this.attributes.splice(index, 1);
         },
+
         submitAttributes() {
             let dataToSend = {};
             this.attributes.forEach(attribute => {
@@ -112,17 +144,9 @@ export default {
             });
             return dataToSend
         },
-        validateForm() {
-            this.submitClicked = true;
-            this.isArticleValid = /[a-zA-Z0-9]+/.test(this.article);
-            return this.name.length >= this.minLength && this.isArticleValid;
-        },
-        showError(fieldName) {
-            return this.submitClicked && !this[fieldName];
-        },
     }
-
 }
+
 </script>
 
 <style scoped>
@@ -146,7 +170,7 @@ label {
     font-weight: 400;
 }
 
-input {
+.field-input, input {
     width: 450px;
     padding: 10px;
     margin-bottom: 15px;
@@ -154,10 +178,6 @@ input {
 
     font-size: 10px;
     font-weight: 400;
-}
-
-.select {
-
 }
 
 .v-select {
@@ -178,7 +198,6 @@ input {
 
 .title {
     align-self: center;
-
 
     font-size: 10px;
     font-weight: 400;
@@ -201,7 +220,7 @@ input {
     border-radius: 5px;
 }
 
-.options p{
+.options p {
     padding: 10px;
 
     width: 450px;
@@ -213,7 +232,7 @@ input {
     font-weight: 400;
 }
 
-.options p:hover{
+.options p:hover {
     background-color: #50A9FC;
 }
 
@@ -281,7 +300,7 @@ input {
     background: #0EAADC;
 }
 
-.error-message {
+.error {
     margin-bottom: 20px;
     margin-left: 5px;
 

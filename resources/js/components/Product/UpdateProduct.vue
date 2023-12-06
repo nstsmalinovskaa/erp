@@ -1,11 +1,33 @@
 <template>
+
     <ModalWindow>
-        <div class="form-create">
+
+        <Form class="form-create" @submit="updateProduct">
             <h5>Редактирование продукта</h5>
+
             <label for="article">Артикул</label>
-            <input v-model="editedProduct.article" type="text" id="article" name="article" required>
+            <Field
+                class="field-input"
+                v-model="editedProduct.article"
+                type="text"
+                id="article"
+                name="article"
+                :rules="articleRules"
+                @input="resetUniqueArticle"
+                :disabled="role !== 'Администратор'"/>
+            <ErrorMessage class="error" name="article"/>
+            <span v-if="uniqueArticle" class="error">Артикул должен быть уникалным</span>
+
             <label for="name">Название</label>
-            <input v-model="editedProduct.name" type="text" id="name" name="name" required>
+            <Field
+                class="field-input"
+                v-model="editedProduct.name"
+                type="text"
+                id="name"
+                name="name"
+                :rules="nameRules"/>
+            <ErrorMessage class="error" name="name"/>
+
             <label for="status">Статус</label>
             <div class="select">
                 <div class="v-select">
@@ -15,7 +37,8 @@
                              src="../../../img/expand_down.svg">
                     </div>
                     <div v-if="isStatusOptionsVisible" class="options">
-                        <p v-for="option in statuses" @click=selectStatus(option)>{{ option.name }}</p>
+                        <p v-for="option in statuses"
+                           @click=selectStatus(option)>{{ option.name }}</p>
                     </div>
                 </div>
             </div>
@@ -30,29 +53,34 @@
                     <div class="attribute-group">
                         <input v-model="attribute.name" type="text" required>
                         <input v-model="attribute.value" type="text" required>
-                        <img @click="removeAttribute(index)" class="delete-attribute" src="../../../img/attribute.svg">
+                        <img @click="removeAttribute(index)"
+                             class="delete-attribute"
+                             src="../../../img/attribute.svg">
                     </div>
                 </div>
                 <a @click="addAttribute" class="add-attr"> + Добавить атрибут</a>
             </div>
 
-            <button @click="updateProduct" class="button-form" type="submit">Добавить</button>
-        </div>
+            <button class="button-form" type="submit">Добавить</button>
+        </Form>
+
     </ModalWindow>
 
 </template>
 
 <script>
-import ModalWindow from "../ModalWindow.vue";
+import ModalWindow from "./Main/Modal/ModalWindow.vue";
+import {Field, Form, ErrorMessage} from 'vee-validate';
 
 export default {
     name: "UpdateProduct.vue",
-    components: {ModalWindow},
+    components: {ModalWindow, Form, Field, ErrorMessage},
 
     props: {
         product: Object,
         getStatusLabel: Function,
-        getProducts: Function
+        getProducts: Function,
+        role: String
     },
 
     data() {
@@ -64,40 +92,76 @@ export default {
             isStatusOptionsVisible: false,
             status: this.getStatusLabel(this.product.status),
             attributes: [],
-            editedProduct: { article: "", name: "", status: "", data: ""}
+            editedProduct: {article: "", name: "", status: "", data: ""},
+            uniqueArticle: false,
         }
     },
 
-    created() {
-        this.convertAttributestoArr()
-        this.createEditProduct()
+    mounted() {
+        this.convertAttributesToArr()
     },
 
+    created() {
+        this.createEditProduct()
+    },
 
     methods: {
         updateProduct() {
             axios.patch(`/api/products/${this.editedProduct.id}`, {
                 article: this.editedProduct.article,
                 name: this.editedProduct.name,
-                status: this.editedProduct.value,
+                status: this.editedProduct.status,
                 data: this.submitAttributes(),
             })
                 .then(res => {
                     this.getProducts();
                     this.$emit('close')
                 })
+                .catch(errors => {
+                    if (errors.response.data.message === "The article has already been taken.") {
+                        this.uniqueArticle = true
+                    }
+                })
         },
+
+        articleRules(value) {
+            if (!value) {
+                return 'Обязательное поле'
+            }
+            if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                return 'Поле должно содержать только латинские символы и цифры'
+            }
+            return true
+        },
+
+        resetUniqueArticle() {
+            this.uniqueArticle = false;
+        },
+
+        nameRules(value) {
+            if (!value) {
+                return 'Обязательное поле'
+            }
+            if (value.length < 10) {
+                return 'Минимальное значение 10 символов'
+            }
+            return true
+        },
+
         selectStatus(option) {
             this.status = option;
+            this.editedProduct.status = this.status.value
             this.isStatusOptionsVisible = false
         },
 
         addAttribute() {
-            this.attributes.push({ name: "", value: "" });
+            this.attributes.push({name: "", value: ""});
         },
+
         removeAttribute(index) {
             this.attributes.splice(index, 1);
         },
+
         submitAttributes() {
             let dataToSend = {};
             this.attributes.forEach(attribute => {
@@ -105,18 +169,18 @@ export default {
             });
             return dataToSend
         },
-        convertAttributestoArr() {
-            for (const [attribute, value] of Object.entries(this.editedProduct.data) ) {
 
-                this.attributes.push({name: attribute, value: value })
+        convertAttributesToArr() {
+            for (const [attribute, value] of Object.entries(this.editedProduct.data)) {
+                this.attributes.push({name: attribute, value: value})
             }
         },
+
         createEditProduct() {
             for (let key in this.product) {
                 this.editedProduct[key] = this.product[key];
             }
-        }
-
+        },
     }
 }
 </script>
@@ -142,7 +206,7 @@ label {
     font-weight: 400;
 }
 
-input {
+.field-input, input {
     width: 450px;
     padding: 10px;
     margin-bottom: 15px;
@@ -152,8 +216,8 @@ input {
     font-weight: 400;
 }
 
-.select {
-
+.field-input:disabled {
+    opacity: 0.9;
 }
 
 .v-select {
@@ -174,7 +238,6 @@ input {
 
 .title {
     align-self: center;
-
 
     font-size: 10px;
     font-weight: 400;
@@ -275,6 +338,14 @@ input {
 
 .button-form:hover {
     background: #0EAADC;
+}
+
+.error {
+    margin-bottom: 20px;
+    margin-left: 5px;
+
+    opacity: 0.5;
+    font-size: 10px;
 }
 
 </style>

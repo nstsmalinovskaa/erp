@@ -6,7 +6,10 @@ use App\Http\Requests\Product\StoreRequest;
 use App\Http\Requests\Product\UpdateRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Notifications\Product\CreatedNotification;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class ProductController extends Controller
 {
@@ -15,7 +18,8 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::all();
+        $products = Product::paginate(6);
+
         return ProductResource::collection($products);
     }
 
@@ -37,9 +41,13 @@ class ProductController extends Controller
     public function update(UpdateRequest $request, Product $product)
     {
         $data = $request->validated();
-        $product->update($data);
-        return response([]);
 
+        if (!Gate::allows('update', [$product, $data])) {
+            abort(403, 'Access denied');
+        }
+
+        $product->update($data);
+        return response()->json([], 204);
     }
 
     /**
@@ -48,6 +56,6 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $product->delete();
-        return response([]);
+        return response()->json([], 204);
     }
 }
