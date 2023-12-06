@@ -18,7 +18,11 @@ docker exec -it project_app  bash
 php artisan migrate
 php artisan db:seed
 ```
-5. Run the queue worker for notifications:
+5.Compile and run the front-end assets:
+```
+npm run dev
+```
+6. Run the queue worker for notifications:
 ```
 php artisan queue:work
 ```
