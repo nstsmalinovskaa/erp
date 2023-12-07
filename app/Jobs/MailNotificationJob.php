@@ -3,23 +3,27 @@
 namespace App\Jobs;
 
 use App\Models\Product;
-use App\Notifications\Product\CreatedNotification;
+use App\Services\Product\NotificationService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Notification;
+
 
 
 class MailNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    protected NotificationService $service;
+    protected Product $product;
 
-    public function __construct(protected Product $product)
+
+    public function __construct(Product $product)
     {
+        $this->service = app(NotificationService::class);
+        $this->product = $product;
     }
 
     /**
@@ -27,7 +31,6 @@ class MailNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Notification::route('mail', config('products.email'))
-            ->notify(new CreatedNotification($this->product));
+        $this->service->mailNotification($this->product);
     }
 }
